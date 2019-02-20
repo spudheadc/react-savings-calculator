@@ -1,5 +1,5 @@
 import { MILLISECONDS_PER_DAY, SET_DATE } from "../constants";
-import { interestReducer } from "./interest";
+import interest from "./interest";
 
 const accumualtedInterest = Math.floor(((10 * 5 * 0.1) / 365.25) * 100) / 100;
 const zeroDate = new Date(0 * MILLISECONDS_PER_DAY);
@@ -10,38 +10,65 @@ const nextDate = new Date(
         zeroDate.getUTCDate()
     )
 ).valueOf();
+
 test("Test interest accumulate", () => {
     expect(
-        interestReducer(
+        interest.process(
             {
-                interestDay: 0,
-                interestRate: 0.1,
                 totalSavings: 10,
                 totalInterest: 0,
-                interestAccumulated: 0,
+                interestAccumulated: 5.001,
+                dates: [
+                    {
+                        interest: {
+                            date: 5 * MILLISECONDS_PER_DAY,
+                            next: nextDate
+                        }
+                    }
+                ],
+                amortization: []
+            },
+            { index: 0, date: 5 * MILLISECONDS_PER_DAY }
+        )
+    ).toMatchObject({
+        totalSavings: 15,
+        totalInterest: 5,
+        interestAccumulated: 5.001 - Math.floor(500.1) / 100,
+        amortization: [
+            {
+                date: 5 * MILLISECONDS_PER_DAY,
+                amount: 5,
+                type: "Interest",
+                balance: 15
+            }
+        ]
+    });
+});
+
+test("Test dates", () => {
+    expect(
+        interest.calculateDate(
+            {
                 startDate: zeroDate,
                 transactionDate: {
                     interest: 5 * MILLISECONDS_PER_DAY
                 },
-                amortization: []
+                dates: []
             },
-            { type: SET_DATE, payload: 5 * MILLISECONDS_PER_DAY }
+            { date: 5 * MILLISECONDS_PER_DAY, index: 0 }
         )
     ).toMatchObject({
-        interestDay: 5 * MILLISECONDS_PER_DAY,
-        interestRate: 0.1,
-        totalSavings: 10 + accumualtedInterest,
-        totalInterest: accumualtedInterest,
-        interestAccumulated: (10 * 5 * 0.1) / 365.25 - accumualtedInterest,
         transactionDate: {
             interest: nextDate
         },
-        amortization: [
+        dates: [
             {
                 date: 5 * MILLISECONDS_PER_DAY,
-                amount: accumualtedInterest,
-                type: "Interest",
-                balance: 10 + accumualtedInterest
+                index: 0,
+                interest: {
+                    date: 5 * MILLISECONDS_PER_DAY,
+                    next: nextDate
+                }
             }
         ]
     });
